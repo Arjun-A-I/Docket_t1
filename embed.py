@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 import pinecone
 from pinecone import PineconeClient
+from pinecone import PineconeClient
 
 load_dotenv()
 
