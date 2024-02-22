@@ -1,4 +1,7 @@
+import pinecone
+from pinecone import Pinecone,PodSpec
 from openai import OpenAI
+
 import os 
 from dotenv import load_dotenv
 load_dotenv()
@@ -10,4 +13,4 @@ resp = client.embeddings.create(
   dimensions=384
 )
 
-print(resp)
+# print(resp)
