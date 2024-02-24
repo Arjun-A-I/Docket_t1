@@ -28,10 +28,16 @@ def load_questions(file):
 
 index_name = "questions-index"
 index = pc.Index(index_name)
-print(index.describe_index_stats())
+# print(index.describe_index_stats())
 
 questions=load_questions('question.json')
 
-for question in questions:
-    embedding = get_embeddings(question['text'])
-    print(question['text'])   
+# for question in questions:
+#     embedding = get_embeddings(question['text'])
+#     index.upsert(vectors=[(question['id'], embedding, {"category": question['category']})])
+    
+# filter_criteria = {"category": "ProductFeatures"}
+query_result = index.query(vector=get_embeddings("How can I manage user permissions and access in Slack, and how can administrators regulate data access and sharing within Slack?"), top_k=5,include_metadata=True)
+for q in query_result['matches']:
+   print(q['id'],q['score'],q['metadata'])
+# print(query_result)
