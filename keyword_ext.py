@@ -28,6 +28,9 @@ def keyword_extract(user_question):
     presence_penalty=0
     )
     return response
+
+
+
 # Assuming `response` is the variable holding the response from the API
 question='Can Slack accommodate custom compliance requirements for large enterprises?'
 content=keyword_extract(question)
