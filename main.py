@@ -1,62 +1,39 @@
 import pinecone
-from sentence_transformers import SentenceTransformer
-from pinecone import Pinecone, ServerlessSpec
-from pinecone import Pinecone,PodSpec
-import time
-import openai
-from openai import OpenAI
-import os
-
-# client = OpenAI(
-#     # This is the default and can be omitted
-#     # api_key=os.environ.get("OPENAI_API_KEY"),
-# 	api_key="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"
-# )
-# # Embedding engine
-# # model = SentenceTransformer('all-MiniLM-L6-v2')
-# # def get_embedding(text):
-# #     return model.encode(text).tolist()  # Ensure output is list
-
-# def get_embedding(text_to_embed):
-# 	# Embed a line of text
-# 	response = openai.Embedding.create(
-#     	model= "text-embedding-3-small",
-#     	input=[text_to_embed]
-# 	)
-# 	# Extract the AI output embedding as a list of floats
-# 	embedding = response["data"][0]["embedding"]
-# 	return embedding
-
-# print(get_embedding('Hi hello how are you'))
-
-# initialize connection to pinecone (get API key at app.pc.io)
-api_key = "8b8780c5-5220-4f23-892a-4654b9daa0ef"
-environment = "gcp-starter"
-
-# configure client
-pc = Pinecone(api_key=api_key)
-spec = PodSpec(environment=environment)
-index_name = pc.Index("questions-index")
+from pinecone import Pinecone,PodSpec,ServerlessSpec
+from langchain_keyword import generate_embeddings,keywordfinder
+import os 
+import json
+from dotenv import load_dotenv
+load_dotenv()
 
 
-# index = pc.Index(index_name)
-print(index_name.describe_index_stats())
-
-example_questions = [
-    {"id": "q1", "text": "What is the capital of France?"},
-    {"id": "q2", "text": "Explain Newton's laws of motion"},
-    # Add more questions as needed
-]
+pc = Pinecone(api_key=os.getenv('PINECONE_API_KEY'))
+spec = PodSpec(environment="gcp-starter")
 
 
-for question in example_questions:
-    embedding = get_embedding(question['text'])  # Embedding is already a list
-    index_name.upsert(vectors=[(question['id'], embedding)])
+def load_questions(file):
+  with open(file, 'r') as file:
+        questions = json.load(file)
+  return questions
 
-query = "which city has the highest population in the world?"
-xq = get_embedding(query)
-xc = index_name.query(vector=xq, top_k=5, include_metadata=True)
-print(xc)
+index_name = "questions-index"
+index = pc.Index(index_name)
+questions=load_questions('question.json')
 
+for question in questions:
+    embedding = get_embeddings(question['text'])
+    index.upsert(vectors=[(question['id'], embedding, {"category": question['category']})])
+    
+# filter_criteria = {"category": "ProductFeatures"}
 
+# question="How can I manage user permissions and access in Slack, and how can administrators regulate data access and sharing within Slack?"
+# question="If we switch from Microsoft Teams to Slack, how will it affect our communication efficiency, and what are the price and costs involved for a medium-sized team?"
+# question="We are considering Slack for our startup, but we are concerned about scalability and compliance issues as we grow. How does Slack handle these?"
+query_result = index.query(vector=generate_embeddings(question), top_k=5,include_metadata=True)
+for q in query_result['matches']:
+   print(q['id'],q['score'],q['metadata'])
+
+# question_keywords=keywordfinder(question)
+# print(question_keywords)
+   
 
