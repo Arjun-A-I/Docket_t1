@@ -1,12 +1,12 @@
 from langchain_openai import OpenAI,OpenAIEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
- 
 
 import os
 import json
 from dotenv import load_dotenv
 load_dotenv()
+
 openapi_key=os.getenv('OPENAI_API_KEY')
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small", dimensions=1536)
