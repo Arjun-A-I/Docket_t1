@@ -1,14 +1,14 @@
 import chromadb
 import chromadb.utils.embedding_functions as embedding_functions
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
-# from langchain.vectorstores import Chroma
-# from chromadb.clients.local import LocalClient
+from chromadb.config import Settings
+import json
 
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
-hf_api_key=os.getenv('HF_API_KEY')
+hf_api_key=os.getenv('HG_API_KEY')
 
 huggingface_ef = embedding_functions.HuggingFaceEmbeddingFunction(
     api_key=hf_api_key,
@@ -16,53 +16,23 @@ huggingface_ef = embedding_functions.HuggingFaceEmbeddingFunction(
 )
 
 
-# persist_directory="chroma_db"
-
-
-# chroma_client = LocalClient(persist_directory=persist_directory)
-
-
-# collection = chroma_client.create_collection(name="new_collections", embedding_function=huggingface_ef)
-
-# # Add documents to the collection with metadata and ids
-# collection.add(
-#     documents=["This is a document", "Another doc"],
-#     metadatas=[{"source": "mysource"}, {"source": "mysource"}],
-#     ids=["id1", "id2"]
-# )
-
-# # Query the collection
-# results = collection.query(
-#     query_texts=["This is a document but also an extension of the stuffs that's happening here with another doc."],
-#     n_results=2
-# )
-
-# print(results)
-
-
-# collection = chroma_client.create_collection(name="new_collections", embedding_function=huggingface_ef)
-
-# # Add documents to the collection with metadata and ids
-# collection.add(
-#     documents=["This is a document", "Another doc"],
-#     metadatas=[{"source": "mysource"}, {"source": "mysource"}],
-#     ids=["id1", "id2"]
-# )
-
-# # Query the collection
-# results = collection.query(
-#     query_texts=["This is a document but also an extension of the stuffs that's happening here with another doc."],
-#     n_results=2
-# )
-
-# print(results)
-import os
-import chromadb
-from chromadb.config import Settings
 DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(DIR, 'data')
 chroma_client = chromadb.PersistentClient(path=DB_PATH, settings=Settings(allow_reset=True, anonymized_telemetry=False))
-sample_collection = chroma_client.get_or_create_collection(name="sample_collection")
+sample_collection = chroma_client.get_or_create_collection(name="sample_collection",metadata={"hnsw":"cosine"},embedding_function=huggingface_ef)
+
+with open('question.json', 'r') as file:
+    documents = json.load(file)
+
+for document in documents:
+    doc_id = document['id']
+    text = document['text']
+    metadata = {'category': document['category']}
+    sample_collection.add(documents=[text], metadatas=[metadata], ids=[doc_id])
+
+    # Add the document to the collection
+    # Note: Adjust the add method according to how `chromadb` accepts documents and metadata.
+
 # documents = [
 #     "Mars, often called the 'Red Planet', has captured the imagination of scientists and space enthusiasts alike.",
 #     "The Hubble Space Telescope has provided us with breathtaking images of distant galaxies and nebulae.",
@@ -80,13 +50,21 @@ sample_collection = chroma_client.get_or_create_collection(name="sample_collecti
 #     "Black Widow, portrayed by Scarlett Johansson, is a skilled spy and assassin in the Marvel Cinematic Universe.",
 #     "The character of Iron Man, played by Robert Downey Jr., kickstarted the immensely successful Marvel movie franchise in 2008."
 # ]
-# metadatas = [{'category': "Space"}, {'category': "Space"}, {'category': "Space"}, {'category': "History"}, {'category': "History"}, {'category': "History"}, {'category': "Animals"}, {'category': "Animals"}, {'category': "Animals"}, {'category': "Movies"}, {'category': "Movies"}, {'category': "Movies"}, {'category': "Superheroes"}, {'category': "Superheroes"}, {'category': "Superheroes"}]
+# metadatas = [{'cat': "Space"}, {'category': "Space"}, {'category': "Space"}, {'category': "History"}, {'category': "History"}, {'category': "History"}, {'category': "Animals"}, {'category': "Animals"}, {'category': "Animals"}, {'category': "Movies"}, {'category': "Movies"}, {'category': "Movies"}, {'category': "Superheroes"}, {'category': "Superheroes"}, {'category': "Superheroes"}]
 # ids = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"]
 
 # sample_collection.add(documents=documents, metadatas=metadatas, ids=ids)
 
-query_result = sample_collection.query(query_texts="Give me some facts about space", n_results=3)
-result_documents = query_result["documents"][0]
-print(sample_collection.database)
+# query_result = sample_collection.query(query_texts="*",n_results=len(documents))
+# result_documents = query_result["documents"][0]
+# print(sample_collection)
 # for doc in query_result:
 #     print(doc)
+
+all_documents = sample_collection.query(query_texts="*", n_results=100)
+print(all_documents)
+for doc, metadata,id in zip(all_documents["documents"][0], all_documents['metadatas'][0],all_documents['ids'][0]):
+    print(f"Document: {doc}")
+    print(f"Metadata: {metadata}")
+    print(f"Id: {id}")
+    print("-----------")
